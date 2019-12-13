@@ -1,15 +1,34 @@
 import sqlite3
-import pprint
-from Humans_Hearts.heart import heart
-from Humans_Hearts.human import human
+from humans_hearts.heart import heart
+from humans_hearts.human import human
+
+# repo
+human1 = human(None, 'Peter', 'Nohart', '1972-12-24')
+heart1 = heart(None, 3.7, 70, 'NA', '2015-12-08')
+human2 = human(None, 'Norton', 'Fewhart', '1986-11-24')
+heart2 = heart(None, 4.6, 60, 'NA', '2016-12-09')
+human3 = human(None, 'Gabriel', 'Lesshart', '1974-10-24')
+heart3 = heart(None, 2.6, 65, 'NA', '2017-12-12')
+human4 = human(None, 'Mustafa', 'Cloghart', '1992-08-24')
+heart4 = heart(None, 3.5, 75, 'NA', '2018-12-01')
+human5 = human(None, 'Igor', 'Nopumpinhart', '1993-02-24')
+heart5 = heart(None, 4.7, 74, 'NA', '2019-11-18')
+human6 = human(None, 'Jermaine', 'Slightearinhart', '2000-02-24')
+heart6 = heart(None, 6.6, 69, 'NA', '2018-10-16')
+human7 = human(None, 'Alius', 'Oldhart', '1988-01-24')
+heart7 = heart(None, 2.9, 81, 'NA', '2016-09-12')
+human8 = human(None, 'Toby', 'Freshart', '1945-05-24')
+heart8 = heart(None, 4.7, 66, 'NA', '2015-06-13')
+human9 = human(None, 'Hannibal', 'Noblehart', '1999-04-24')
+heart9 = heart(None, 4.3, 72, 'NA', '2014-01-02')
+human10 = human(None, 'Thor', 'Cancerhart', '2010-06-24')
+heart10 = heart(None, 5.5, 80, 'NA', '2017-06-22')
+
+humans = [human1, human2, human3, human4, human5, human6, human7, human8, human9, human10]
+hearts = [heart1, heart2, heart3, heart4, heart5, heart6, heart7, heart8, heart9, heart10]
 
 
-# One to One rel
-# Human: human_id, first_name, last_name, birth_date
-# Heart: heart_id, volume, blood_pump_rate, defect, creation_date
-
-humans = 'humans'
-hearts = 'hearts'
+db_name = "humanHearts.db"
 # queries for creating tables
 create_table_humans = """CREATE TABLE IF NOT EXISTS humans (
                                                         human_id integer PRIMARY KEY,
@@ -32,108 +51,61 @@ create_table_hearts = """CREATE TABLE IF NOT EXISTS hearts (
                                                         ON UPDATE CASCADE
                                                         )"""
 
-db_name = "humanHearts.db"
-
-
-# db conn
-def open_connection():
-    connection = sqlite3.connect(db_name)
-    cursor = connection.cursor()
-
-    return connection, cursor
-
-
-def close_connection(connection, cursor):
-    cursor.close()
-    connection.close()
-
 
 def create_table(create_table_query):
     try:
-        connection, cursor = open_connection()
+        connection = sqlite3.connect(db_name)
+        cursor = connection.cursor()
         cursor.execute(create_table_query)
         connection.commit()
     except sqlite3.DatabaseError as error:
         print(error)
     finally:
         # noinspection PyUnboundLocalVariable
-        close_connection(connection, cursor)
+        cursor.close()
+        connection.close()
 
 
-# crud
-# -------
-# helpers
-def get_fields(entity):
-    field_values = [attr + ' = (?)' for attr, value in entity.__dict__.items()]
-
-    return field_values
-
-
-def execute_query(sql_query, query_parameters=None, select=None):
+def execute_select_query(query):
     try:
-        connection, cursor = open_connection()
-
-        if select is None:
-            cursor.execute(sql_query, query_parameters)
-            connection.commit()
-        if select:
-            rows = [row for row in cursor.execute(sql_query)]
-            return rows
+        connection = sqlite3.connect(db_name)
+        cursor = connection.cursor()
+        rows = cursor.execute(query).fetchall()
+        return rows
     except sqlite3.DatabaseError as error:
         print(error)
     finally:
         # noinspection PyUnboundLocalVariable
-        close_connection(connection, cursor)
-
-
-def gather_parameters(entity):
-    parameters = [value for attr, value in entity.__dict__.items()]
-
-    return parameters
-
+        cursor.close()
+        connection.close()
 
 create_table(create_table_humans)
 create_table(create_table_hearts)
 
 
-# repo
-# Human: human_id, first_name, last_name, birth_date
-# Heart: heart_id, volume, blood_pump_rate, defect, creation_date
-humanFirst = human(None, 'Peter', 'Nohart', '1972-12-24')
-heartFirst = heart(None, 3.6, 70, 'NA', '2015-12-23')
-
-
 def create_human_heart(human, heart):
-    params_human = gather_parameters(human)
-    params_human.insert(1, None)
-    insert_human_query = """INSERT INTO humans VALUES(?, ?, ?, ?, ?)"""
-    # execute_query(insert_human_query, params_human)
-
-    human.human_id = execute_query("SELECT human_id FROM humans WHERE last_name = '" + human.last_name + "' ORDER BY human_id LIMIT 1", None, True)[0]
-    print(human.human_id)
-
-    params_heart = gather_parameters(heart)
-    params_heart.insert(1, human.human_id)
-
-    insert_heart_query = """INSERT INTO hearts VALUES (?, ?, ?, ?, ?, ?)"""
-    execute_query(insert_heart_query, params_heart)
+    heart_id = 'heart_id'
+    human.create_human()
+    human.set_id(human.get_record_id())
+    heart.create_heart(human.get_id())
+    heart.set_id(heart.get_record_id(human.get_id()))
+    human.update_record_(heart_id, heart.get_id())
 
 
-    # params_heart.insert(1, human.human_id)
-    #
-    #
-    # insert_heart_query = """INSERT INTO hearts VALUES (?, ?, ?, ?, ?, ?)"""
-    # execute_query(insert_heart_query, params_heart)
-    #
-    #
-    # print(execute_query("SELECT * FROM hearts", None, True))
-    # heart.heart_id = execute_query("SELECT heart_id FROM hearts WHERE hearts.human_id = " + human.human_id[0] + "", None, True)
-    # print(heart.heart_id)
-    # update_human_heart_id_query = "UPDATE humans SET heart_id = '" + select_heart_id + "' WHERE human_id = ?"
-    # execute_query(update_human_heart_id_query, select_human_id)
+# create_human_heart(human1, heart1)
+# create_human_heart(human2, heart2)
+# create_human_heart(human3, heart3)
+# create_human_heart(human4, heart4)
+# create_human_heart(human5, heart5)
+# create_human_heart(human6, heart6)
+# create_human_heart(human7, heart7)
+# create_human_heart(human8, heart8)
+# create_human_heart(human9, heart9)
+# create_human_heart(human10, heart10)
+
+print(execute_select_query("SELECT * FROM humans, hearts"))
 
 
-create_human_heart(humanFirst, heartFirst)
 
 
 
